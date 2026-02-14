@@ -26,6 +26,30 @@
   overflow-y: auto;
 }
 
+/* Filters */
+.sidebar__filters {
+  padding: 4px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.sidebar__filter-item {
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 4px;
+  margin: 1px 4px;
+}
+
+.sidebar__filter-item:hover {
+  background: #2a2a4a;
+}
+
+.sidebar__filter-item--active {
+  background: #2a2a4a;
+  color: #ffffff;
+}
+
 /* Section Groups */
 .sidebar__section {
   margin-bottom: 4px;

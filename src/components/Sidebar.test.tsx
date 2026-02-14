@@ -125,4 +125,29 @@ describe('Sidebar', () => {
       type: 'Project',
     })
   })
+
+  it('renders filter items', () => {
+    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} />)
+    expect(screen.getByText('All Notes')).toBeInTheDocument()
+    expect(screen.getByText('People')).toBeInTheDocument()
+    expect(screen.getByText('Events')).toBeInTheDocument()
+    expect(screen.getByText('Favorites')).toBeInTheDocument()
+    expect(screen.getByText('Trash')).toBeInTheDocument()
+  })
+
+  it('highlights active filter', () => {
+    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={() => {}} />)
+    const allNotes = screen.getByText('All Notes')
+    expect(allNotes.className).toContain('sidebar__filter-item--active')
+  })
+
+  it('calls onSelect when clicking a filter', () => {
+    const onSelect = vi.fn()
+    render(<Sidebar entries={[]} selection={defaultSelection} onSelect={onSelect} />)
+    fireEvent.click(screen.getByText('People'))
+    expect(onSelect).toHaveBeenCalledWith({
+      kind: 'filter',
+      filter: 'people',
+    })
+  })
 })

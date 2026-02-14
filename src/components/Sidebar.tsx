@@ -8,6 +8,14 @@ interface SidebarProps {
   onSelect: (selection: SidebarSelection) => void
 }
 
+const FILTERS = [
+  { label: 'All Notes', filter: 'all' as const },
+  { label: 'People', filter: 'people' as const },
+  { label: 'Events', filter: 'events' as const },
+  { label: 'Favorites', filter: 'favorites' as const },
+  { label: 'Trash', filter: 'trash' as const },
+]
+
 const SECTION_GROUPS = [
   { label: 'PROJECTS', type: 'Project' },
   { label: 'EXPERIMENTS', type: 'Experiment' },
@@ -38,6 +46,20 @@ export function Sidebar({ entries, selection, onSelect }: SidebarProps) {
       </div>
 
       <nav className="sidebar__nav">
+        <div className="sidebar__filters">
+          {FILTERS.map(({ label, filter }) => (
+            <div
+              key={filter}
+              className={`sidebar__filter-item${
+                isActive({ kind: 'filter', filter }) ? ' sidebar__filter-item--active' : ''
+              }`}
+              onClick={() => onSelect({ kind: 'filter', filter })}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+
         {SECTION_GROUPS.map(({ label, type }) => {
           const items = entries.filter((e) => e.isA === type)
           const isCollapsed = collapsed[type] ?? false
