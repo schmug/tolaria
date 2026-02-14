@@ -159,6 +159,10 @@ function App() {
         <Inspector
           collapsed={inspectorCollapsed}
           onToggle={() => setInspectorCollapsed((c) => !c)}
+          entry={activeTab?.entry ?? null}
+          content={activeTab?.content ?? null}
+          entries={entries}
+          onNavigate={handleNavigateWikilink}
         />
       </div>
     </div>
