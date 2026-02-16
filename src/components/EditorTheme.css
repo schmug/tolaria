@@ -11,43 +11,8 @@
   max-width: var(--editor-max-width);
   margin: 0 auto;  /* Center the editor body */
   padding: var(--editor-padding-vertical) var(--editor-padding-horizontal);
-  padding-left: calc(var(--editor-padding-horizontal) + 40px); /* Extra space for block numbers */
   color: var(--colors-text);
   caret-color: var(--colors-cursor);
-  counter-reset: block-number;
-}
-
-/* --- Block numbers (CSS counters) --- 
-   Only count and display numbers for top-level blocks (direct children of the root block-group).
-   The root .bn-block-group is the direct child of the tiptap editor div. */
-.editor__blocknote-container .bn-editor > .bn-block-group > .bn-block-outer {
-  counter-increment: block-number;
-  position: relative;
-}
-
-.editor__blocknote-container .bn-editor > .bn-block-group > .bn-block-outer::after {
-  content: counter(block-number);
-  position: absolute;
-  left: -36px;
-  top: 0;
-  width: 28px;
-  text-align: right;
-  font-size: 12px;
-  line-height: var(--editor-line-height);
-  color: var(--text-faint, #999);
-  pointer-events: none;
-  user-select: none;
-}
-
-/* --- Active block highlight --- */
-.editor__blocknote-container .bn-block-outer[data-is-active="true"] > .bn-block > .bn-block-content {
-  background: var(--bg-hover-subtle, rgba(128, 128, 128, 0.06));
-  border-radius: 3px;
-}
-
-/* Dim non-active block numbers, highlight active */
-.editor__blocknote-container .bn-block-outer[data-is-active="true"]::after {
-  color: var(--text-secondary, #666);
 }
 
 /* Override BlockNote's default line-height on block-outer so our theme controls it */

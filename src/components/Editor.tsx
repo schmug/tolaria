@@ -197,27 +197,6 @@ function BlockNoteTab({ content, entries, onNavigateWikilink }: { content: strin
     return () => container.removeEventListener('click', handler as EventListener, true)
   }, [editor])
 
-  // Track active block for highlight — called via onSelectionChange on BlockNoteView
-  const handleSelectionChange = useCallback(() => {
-    const container = document.querySelector('.editor__blocknote-container')
-    if (!container) return
-
-    // Clear previous active
-    container.querySelectorAll('[data-is-active]').forEach(el => {
-      el.removeAttribute('data-is-active')
-    })
-
-    // Use BlockNote's API to get the current block
-    const currentBlock = editor.getTextCursorPosition()?.block
-    if (currentBlock) {
-      // Find the DOM element for this block by its id
-      const blockEl = container.querySelector(`[data-id="${currentBlock.id}"].bn-block-outer`)
-      if (blockEl) {
-        blockEl.setAttribute('data-is-active', 'true')
-      }
-    }
-  }, [editor])
-
   // Suggestion menu items for [[ trigger
   const getWikilinkItems = useCallback(async (query: string) => {
     const items = entries.map(entry => ({
@@ -244,7 +223,6 @@ function BlockNoteTab({ content, entries, onNavigateWikilink }: { content: strin
       <BlockNoteView
         editor={editor}
         theme={isDark ? 'dark' : 'light'}
-        onSelectionChange={handleSelectionChange}
       >
         {/* Wikilink suggestion menu triggered by [[ */}
         <SuggestionMenuController
