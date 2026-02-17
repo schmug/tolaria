@@ -85,10 +85,6 @@ const schema = BlockNoteSchema.create({
   },
 })
 
-// Wikilink utilities and splitFrontmatter extracted to ../utils/wikilinks.ts
-
-// DiffView extracted to ./DiffView.tsx
-
 /** Inner component that creates/manages BlockNote for a single tab */
 function BlockNoteTab({ content, entries, onNavigateWikilink }: { content: string; entries: VaultEntry[]; onNavigateWikilink: (target: string) => void }) {
   const [, body] = useMemo(() => splitFrontmatter(content), [content])
