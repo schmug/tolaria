@@ -18,6 +18,62 @@
       "children": [
         {
           "type": "frame",
+          "id": "yVQFF",
+          "name": "macOS Title Bar",
+          "width": "fill_container",
+          "height": 38,
+          "fill": "$--sidebar",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "bottom": 1
+            },
+            "fill": "$--border"
+          },
+          "gap": 12,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "0MCME",
+              "name": "trafficLights",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "c2AU6",
+                  "name": "closeBtn",
+                  "fill": "#FF5F57",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "h0zbh",
+                  "name": "minimizeBtn",
+                  "fill": "#FEBC2E",
+                  "width": 12,
+                  "height": 12
+                },
+                {
+                  "type": "ellipse",
+                  "id": "tcqbu",
+                  "name": "maximizeBtn",
+                  "fill": "#28C840",
+                  "width": 12,
+                  "height": 12
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
           "id": "oHDfa",
           "name": "Content",
           "width": "fill_container",
@@ -38,76 +94,6 @@
               },
               "layout": "vertical",
               "children": [
-                {
-                  "type": "frame",
-                  "id": "L9aua",
-                  "name": "Header",
-                  "width": "fill_container",
-                  "height": 45,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": {
-                      "bottom": 1
-                    },
-                    "fill": {
-                      "type": "color",
-                      "color": "$--border",
-                      "enabled": false
-                    }
-                  },
-                  "gap": 8,
-                  "padding": [
-                    0,
-                    16
-                  ],
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "0MCME",
-                      "name": "trafficLights",
-                      "gap": 8,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "ellipse",
-                          "id": "c2AU6",
-                          "name": "closeBtn",
-                          "fill": "#FF5F57",
-                          "width": 12,
-                          "height": 12
-                        },
-                        {
-                          "type": "ellipse",
-                          "id": "h0zbh",
-                          "name": "minimizeBtn",
-                          "fill": "#FEBC2E",
-                          "width": 12,
-                          "height": 12
-                        },
-                        {
-                          "type": "ellipse",
-                          "id": "tcqbu",
-                          "name": "maximizeBtn",
-                          "fill": "#28C840",
-                          "width": 12,
-                          "height": 12
-                        }
-                      ]
-                    },
-                    {
-                      "type": "icon_font",
-                      "id": "mnokd",
-                      "name": "sidebarToggle",
-                      "width": 16,
-                      "height": 16,
-                      "iconFontName": "sidebar-simple",
-                      "iconFontFamily": "phosphor",
-                      "fill": "$--muted-foreground"
-                    }
-                  ]
-                },
                 {
                   "type": "frame",
                   "id": "4wMva",
