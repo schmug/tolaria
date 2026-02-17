@@ -1,9 +1,28 @@
 import { useMemo, useCallback } from 'react'
+import type { ComponentType, SVGAttributes } from 'react'
 import type { VaultEntry, GitCommit } from '../types'
 import { cn } from '@/lib/utils'
-import { SlidersHorizontal, X } from '@phosphor-icons/react'
+import {
+  SlidersHorizontal, X, Wrench, Flask, Target, ArrowsClockwise,
+  Users, CalendarBlank, Tag, FileText,
+} from '@phosphor-icons/react'
 import { parseFrontmatter, type ParsedFrontmatter } from '../utils/frontmatter'
 import { DynamicPropertiesPanel, RELATIONSHIP_KEYS, containsWikilinks } from './DynamicPropertiesPanel'
+import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
+
+const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>> = {
+  Project: Wrench,
+  Experiment: Flask,
+  Responsibility: Target,
+  Procedure: ArrowsClockwise,
+  Person: Users,
+  Event: CalendarBlank,
+  Topic: Tag,
+}
+
+function getTypeIcon(isA: string | undefined): ComponentType<SVGAttributes<SVGSVGElement>> {
+  return (isA && TYPE_ICON_MAP[isA]) || FileText
+}
 
 interface InspectorProps {
   collapsed: boolean
@@ -62,15 +81,18 @@ function RelationshipGroup({ label, refs, entries, onNavigate }: { label: string
       <div className="flex flex-col gap-1">
         {refs.map((ref, idx) => {
           const refType = resolveRefType(ref, entries)
+          const color = refType ? getTypeColor(refType) : 'var(--accent-blue)'
+          const bgColor = refType ? getTypeLightColor(refType) : 'var(--accent-blue-light)'
+          const TypeIcon = getTypeIcon(refType)
           return (
             <button
               key={`${ref}-${idx}`}
-              className="flex items-center justify-between gap-2 border-none text-left text-primary cursor-pointer hover:opacity-80"
-              style={{ background: 'var(--accent-blue-light)', borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 500 }}
+              className="flex items-center justify-between gap-2 border-none text-left cursor-pointer hover:opacity-80"
+              style={{ background: bgColor, color, borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 500 }}
               onClick={() => onNavigate(wikilinkTarget(ref))}
             >
               <span className="flex-1 truncate">{wikilinkDisplay(ref)}</span>
-              {refType && <span className="shrink-0 text-[11px] text-muted-foreground">{refType}</span>}
+              <TypeIcon width={14} height={14} className="shrink-0" style={{ color }} />
             </button>
           )
         })}
@@ -146,16 +168,21 @@ function BacklinksPanel({ backlinks, onNavigate }: { backlinks: VaultEntry[]; on
         <p className="m-0 text-[13px] text-muted-foreground">No backlinks</p>
       ) : (
         <div className="flex flex-col gap-0.5">
-          {backlinks.map((e) => (
-            <button
-              key={e.path}
-              className="flex items-center justify-between gap-2 border-none bg-transparent p-0 py-1 text-left text-[13px] text-primary cursor-pointer hover:opacity-80"
-              onClick={() => onNavigate(e.title)}
-            >
-              <span className="flex-1 truncate">{e.title}</span>
-              {e.isA && <span className="shrink-0 text-[11px] text-muted-foreground">{e.isA}</span>}
-            </button>
-          ))}
+          {backlinks.map((e) => {
+            const color = e.isA ? getTypeColor(e.isA) : 'var(--accent-blue)'
+            const TypeIcon = getTypeIcon(e.isA ?? undefined)
+            return (
+              <button
+                key={e.path}
+                className="flex items-center justify-between gap-2 border-none bg-transparent p-0 py-1 text-left text-[13px] cursor-pointer hover:opacity-80"
+                style={{ color }}
+                onClick={() => onNavigate(e.title)}
+              >
+                <span className="flex-1 truncate">{e.title}</span>
+                {e.isA && <TypeIcon width={14} height={14} className="shrink-0" style={{ color }} />}
+              </button>
+            )
+          })}
         </div>
       )}
     </div>
