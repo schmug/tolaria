@@ -449,6 +449,7 @@ AI agents are autonomous systems that can plan, execute, and adapt to achieve go
   // --- Type documents ---
   '/Users/luca/Laputa/type/project.md': `---
 Is A: Type
+order: 0
 ---
 
 # Project
@@ -462,6 +463,7 @@ A **time-bound initiative** that advances a [[type/responsibility|Responsibility
 `,
   '/Users/luca/Laputa/type/responsibility.md': `---
 Is A: Type
+order: 1
 ---
 
 # Responsibility
@@ -474,6 +476,7 @@ An **ongoing area of ownership** — something you're accountable for indefinite
 `,
   '/Users/luca/Laputa/type/procedure.md': `---
 Is A: Type
+order: 2
 ---
 
 # Procedure
@@ -488,6 +491,7 @@ A **recurring process** tied to a [[type/responsibility|Responsibility]]. Proced
 `,
   '/Users/luca/Laputa/type/experiment.md': `---
 Is A: Type
+order: 3
 ---
 
 # Experiment
@@ -500,6 +504,7 @@ A **hypothesis-driven investigation** with a clear test and measurable outcome. 
 `,
   '/Users/luca/Laputa/type/person.md': `---
 Is A: Type
+order: 4
 ---
 
 # Person
@@ -511,6 +516,7 @@ A **person** you interact with — team members, collaborators, contacts. People
 `,
   '/Users/luca/Laputa/type/event.md': `---
 Is A: Type
+order: 5
 ---
 
 # Event
@@ -522,6 +528,7 @@ A **point-in-time occurrence** — meetings, launches, milestones. Events are li
 `,
   '/Users/luca/Laputa/type/topic.md': `---
 Is A: Type
+order: 6
 ---
 
 # Topic
@@ -533,6 +540,7 @@ A **subject area** for categorization. Topics group related notes, projects, and
 `,
   '/Users/luca/Laputa/type/essay.md': `---
 Is A: Type
+order: 7
 ---
 
 # Essay
@@ -544,6 +552,7 @@ A **published piece of writing** — newsletter essays, blog posts, articles. Es
 `,
   '/Users/luca/Laputa/type/note.md': `---
 Is A: Type
+order: 8
 ---
 
 # Note
@@ -683,6 +692,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/responsibility/grow-newsletter.md',
@@ -712,6 +722,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/responsibility/manage-sponsorships.md',
@@ -735,6 +746,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/procedure/write-weekly-essays.md',
@@ -758,6 +770,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/procedure/run-sponsorships.md',
@@ -781,6 +794,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/experiment/stock-screener.md',
@@ -805,6 +819,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/note/facebook-ads-strategy.md',
@@ -829,6 +844,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/note/budget-allocation.md',
@@ -852,6 +868,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/person/matteo-cellini.md',
@@ -874,6 +891,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/event/2026-02-14-laputa-app-kickoff.md',
@@ -897,6 +915,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/topic/software-development.md',
@@ -920,6 +939,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/topic/trading.md',
@@ -943,6 +963,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/essay/on-writing-well.md',
@@ -966,6 +987,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/essay/engineering-leadership-101.md',
@@ -990,6 +1012,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/essay/ai-agents-primer.md',
@@ -1013,6 +1036,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   // --- Type documents ---
   {
@@ -1034,6 +1058,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 0,
   },
   {
     path: '/Users/luca/Laputa/type/responsibility.md',
@@ -1054,6 +1079,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 1,
   },
   {
     path: '/Users/luca/Laputa/type/procedure.md',
@@ -1074,6 +1100,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 2,
   },
   {
     path: '/Users/luca/Laputa/type/experiment.md',
@@ -1094,6 +1121,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 3,
   },
   {
     path: '/Users/luca/Laputa/type/person.md',
@@ -1114,6 +1142,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 4,
   },
   {
     path: '/Users/luca/Laputa/type/event.md',
@@ -1134,6 +1163,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 5,
   },
   {
     path: '/Users/luca/Laputa/type/topic.md',
@@ -1154,6 +1184,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 6,
   },
   {
     path: '/Users/luca/Laputa/type/essay.md',
@@ -1174,6 +1205,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 7,
   },
   {
     path: '/Users/luca/Laputa/type/note.md',
@@ -1194,6 +1226,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: 8,
   },
   // --- Custom type documents (user-created types) ---
   {
@@ -1215,6 +1248,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: 'cooking-pot',
     color: 'orange',
+    order: 9,
   },
   {
     path: '/Users/luca/Laputa/type/book.md',
@@ -1235,6 +1269,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     relationships: {},
     icon: 'book-open',
     color: 'green',
+    order: 10,
   },
   // --- Instances of custom types ---
   {
@@ -1258,6 +1293,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/Users/luca/Laputa/book/designing-data-intensive-applications.md',
@@ -1280,6 +1316,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     },
     icon: null,
     color: null,
+    order: null,
   },
   // --- Archived entries ---
   {
@@ -1296,6 +1333,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     archived: true,
     icon: null,
     color: null,
+    order: null,
     modifiedAt: Date.now() / 1000 - 86400 * 120,
     createdAt: Date.now() / 1000 - 86400 * 200,
     fileSize: 680,
@@ -1319,6 +1357,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
     archived: true,
     icon: null,
     color: null,
+    order: null,
     modifiedAt: Date.now() / 1000 - 86400 * 90,
     createdAt: Date.now() / 1000 - 86400 * 150,
     fileSize: 520,

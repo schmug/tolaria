@@ -35,6 +35,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/vault/responsibility/grow-newsletter.md',
@@ -55,6 +56,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/vault/experiment/stock-screener.md',
@@ -75,6 +77,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/vault/procedure/weekly-essays.md',
@@ -95,6 +98,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/vault/topic/software-development.md',
@@ -115,6 +119,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/vault/topic/trading.md',
@@ -135,6 +140,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/vault/person/alice.md',
@@ -155,6 +161,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
   {
     path: '/vault/event/kickoff.md',
@@ -175,6 +182,7 @@ const mockEntries: VaultEntry[] = [
     relationships: {},
     icon: null,
     color: null,
+    order: null,
   },
 ]
 
@@ -322,6 +330,7 @@ describe('Sidebar', () => {
         relationships: {},
     icon: null,
     color: null,
+    order: null,
       },
       {
         path: '/vault/type/book.md',
@@ -342,6 +351,7 @@ describe('Sidebar', () => {
         relationships: {},
     icon: null,
     color: null,
+    order: null,
       },
       {
         path: '/vault/recipe/pasta.md',
@@ -362,6 +372,7 @@ describe('Sidebar', () => {
         relationships: {},
     icon: null,
     color: null,
+    order: null,
       },
     ]
 
@@ -410,6 +421,7 @@ describe('Sidebar', () => {
         relationships: {},
     icon: null,
     color: null,
+    order: null,
       }
       render(<Sidebar entries={[...mockEntries, projectTypeEntry]} selection={defaultSelection} onSelect={() => {}} />)
       // "Projects" should appear once (the built-in section), not twice

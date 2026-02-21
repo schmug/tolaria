@@ -39,6 +39,8 @@ pub struct VaultEntry {
     pub icon: Option<String>,
     /// Accent color key for Type entries: "red", "purple", "blue", "green", "yellow", "orange".
     pub color: Option<String>,
+    /// Display order for Type entries in sidebar (lower = higher). None = use default order.
+    pub order: Option<i64>,
 }
 
 /// Intermediate struct to capture YAML frontmatter fields.
@@ -68,6 +70,8 @@ struct Frontmatter {
     icon: Option<String>,
     #[serde(default)]
     color: Option<String>,
+    #[serde(default)]
+    order: Option<i64>,
 }
 
 /// Handles YAML fields that can be either a single string or a list of strings.
@@ -214,7 +218,7 @@ fn parse_frontmatter(data: &HashMap<String, serde_json::Value>) -> Frontmatter {
 /// Only skip keys that can never contain wikilinks.
 const SKIP_KEYS: &[&str] = &[
     "is a", "aliases", "status", "cadence", "archived", "created at", "created time",
-    "icon", "color",
+    "icon", "color", "order",
 ];
 
 /// Check if a string contains a wikilink pattern `[[...]]`.
@@ -367,6 +371,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
         modified_at, created_at, file_size,
         icon: frontmatter.icon,
         color: frontmatter.color,
+        order: frontmatter.order,
     })
 }
 

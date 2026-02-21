@@ -20,6 +20,8 @@ export interface VaultEntry {
   icon: string | null
   /** Accent color key for Type entries: "red" | "purple" | "blue" | "green" | "yellow" | "orange" */
   color: string | null
+  /** Display order for Type entries in sidebar (lower = higher). null = use default order. */
+  order: number | null
 }
 
 export interface GitCommit {
