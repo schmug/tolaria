@@ -9,8 +9,10 @@ import {
   buildNoteContent,
   resolveNewNote,
   resolveNewType,
+  frontmatterToEntryPatch,
   useNoteActions,
 } from './useNoteActions'
+import type { NoteActionsConfig } from './useNoteActions'
 
 // Mock dependencies
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
@@ -211,20 +213,75 @@ describe('resolveNewType', () => {
   })
 })
 
+describe('frontmatterToEntryPatch', () => {
+  it.each([
+    ['is_a', 'Project', { isA: 'Project' }],
+    ['status', 'Done', { status: 'Done' }],
+    ['color', 'red', { color: 'red' }],
+    ['icon', 'star', { icon: 'star' }],
+    ['owner', 'Luca', { owner: 'Luca' }],
+    ['cadence', 'Weekly', { cadence: 'Weekly' }],
+    ['archived', true, { archived: true }],
+    ['trashed', true, { trashed: true }],
+    ['order', 5, { order: 5 }],
+  ] as [string, unknown, Partial<VaultEntry>][])(
+    'maps %s update to correct entry field',
+    (key, value, expected) => {
+      expect(frontmatterToEntryPatch('update', key, value as never)).toEqual(expected)
+    },
+  )
+
+  it('maps aliases update with array value', () => {
+    expect(frontmatterToEntryPatch('update', 'aliases', ['A', 'B'])).toEqual({ aliases: ['A', 'B'] })
+  })
+
+  it('maps belongs_to update with array value', () => {
+    expect(frontmatterToEntryPatch('update', 'belongs_to', ['[[parent]]'])).toEqual({ belongsTo: ['[[parent]]'] })
+  })
+
+  it('handles case-insensitive keys with spaces (e.g. "Is A", "Belongs to")', () => {
+    expect(frontmatterToEntryPatch('update', 'Is A', 'Experiment')).toEqual({ isA: 'Experiment' })
+    expect(frontmatterToEntryPatch('update', 'Belongs to', ['[[x]]'])).toEqual({ belongsTo: ['[[x]]'] })
+  })
+
+  it('returns empty object for unknown keys', () => {
+    expect(frontmatterToEntryPatch('update', 'custom_field', 'value')).toEqual({})
+  })
+
+  it.each([
+    ['status', { status: null }],
+    ['color', { color: null }],
+    ['aliases', { aliases: [] }],
+    ['archived', { archived: false }],
+    ['order', { order: null }],
+  ] as [string, Partial<VaultEntry>][])(
+    'maps delete of %s to null/default',
+    (key, expected) => {
+      expect(frontmatterToEntryPatch('delete', key)).toEqual(expected)
+    },
+  )
+
+  it('returns empty object for unknown key on delete', () => {
+    expect(frontmatterToEntryPatch('delete', 'unknown_key')).toEqual({})
+  })
+})
+
 describe('useNoteActions hook', () => {
   const addEntry = vi.fn()
   const updateContent = vi.fn()
+  const updateEntry = vi.fn()
   const setToastMessage = vi.fn()
+
+  const makeConfig = (entries: VaultEntry[] = []): NoteActionsConfig => ({
+    addEntry, updateContent, entries, setToastMessage, updateEntry,
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('handleCreateNote calls addEntry and creates correct entry', () => {
-    const entries: VaultEntry[] = []
-    const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
-    )
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
 
     act(() => {
       result.current.handleCreateNote('Test Note', 'Note')
@@ -239,10 +296,7 @@ describe('useNoteActions hook', () => {
   })
 
   it('handleCreateType creates type entry', () => {
-    const entries: VaultEntry[] = []
-    const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
-    )
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
 
     act(() => {
       result.current.handleCreateType('Recipe')
@@ -256,27 +310,20 @@ describe('useNoteActions hook', () => {
 
   it('handleNavigateWikilink finds entry by title', async () => {
     const target = makeEntry({ title: 'Target Note', path: '/vault/note/target.md' })
-    const entries = [target]
 
-    const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
-    )
+    const { result } = renderHook(() => useNoteActions(makeConfig([target])))
 
     await act(async () => {
       result.current.handleNavigateWikilink('Target Note')
     })
 
-    // Should set active tab path (via handleSelectNote which loads content)
     expect(result.current.activeTabPath).toBe('/vault/note/target.md')
   })
 
   it('handleNavigateWikilink warns when target not found', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const entries: VaultEntry[] = []
 
-    const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
-    )
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
 
     act(() => {
       result.current.handleNavigateWikilink('Nonexistent')
@@ -286,31 +333,53 @@ describe('useNoteActions hook', () => {
     warnSpy.mockRestore()
   })
 
-  it('handleUpdateFrontmatter calls mock and shows toast on success', async () => {
-    const entries: VaultEntry[] = []
-    const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
-    )
+  it('handleUpdateFrontmatter calls updateEntry with mapped patch', async () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
 
     await act(async () => {
       await result.current.handleUpdateFrontmatter('/vault/note.md', 'status', 'Done')
     })
 
     expect(updateContent).toHaveBeenCalled()
+    expect(updateEntry).toHaveBeenCalledWith('/vault/note.md', { status: 'Done' })
     expect(setToastMessage).toHaveBeenCalledWith('Property updated')
   })
 
-  it('handleDeleteProperty calls mock and shows toast on success', async () => {
-    const entries: VaultEntry[] = []
-    const { result } = renderHook(() =>
-      useNoteActions(addEntry, updateContent, entries, setToastMessage)
-    )
+  it('handleUpdateFrontmatter syncs is_a and color changes to entries', async () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+    await act(async () => {
+      await result.current.handleUpdateFrontmatter('/vault/note.md', 'is_a', 'Project')
+    })
+    expect(updateEntry).toHaveBeenCalledWith('/vault/note.md', { isA: 'Project' })
+
+    vi.clearAllMocks()
+    await act(async () => {
+      await result.current.handleUpdateFrontmatter('/vault/note.md', 'color', 'blue')
+    })
+    expect(updateEntry).toHaveBeenCalledWith('/vault/note.md', { color: 'blue' })
+  })
+
+  it('handleDeleteProperty calls updateEntry with null/default values', async () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
 
     await act(async () => {
       await result.current.handleDeleteProperty('/vault/note.md', 'status')
     })
 
     expect(updateContent).toHaveBeenCalled()
+    expect(updateEntry).toHaveBeenCalledWith('/vault/note.md', { status: null })
     expect(setToastMessage).toHaveBeenCalledWith('Property deleted')
+  })
+
+  it('handleUpdateFrontmatter does not call updateEntry for unknown keys', async () => {
+    const { result } = renderHook(() => useNoteActions(makeConfig()))
+
+    await act(async () => {
+      await result.current.handleUpdateFrontmatter('/vault/note.md', 'custom_field', 'value')
+    })
+
+    expect(updateEntry).not.toHaveBeenCalled()
+    expect(setToastMessage).toHaveBeenCalledWith('Property updated')
   })
 })

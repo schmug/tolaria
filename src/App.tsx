@@ -70,7 +70,7 @@ function App() {
     setApiKey(settings.anthropic_key ?? '')
   }, [settings.anthropic_key])
 
-  const notes = useNoteActions(vault.addEntry, vault.updateContent, vault.entries, setToastMessage)
+  const notes = useNoteActions({ addEntry: vault.addEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
 
   const entryActions = useEntryActions({
     entries: vault.entries,

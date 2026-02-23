@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { isTauri, mockInvoke, addMockEntry, updateMockContent } from '../mock-tauri'
 import type { VaultEntry } from '../types'
@@ -17,6 +17,14 @@ interface NewEntryParams {
 interface RenameResult {
   new_path: string
   updated_files: number
+}
+
+export interface NoteActionsConfig {
+  addEntry: (entry: VaultEntry, content: string) => void
+  updateContent: (path: string, content: string) => void
+  entries: VaultEntry[]
+  setToastMessage: (msg: string | null) => void
+  updateEntry: (path: string, patch: Partial<VaultEntry>) => void
 }
 
 async function performRename(
@@ -103,6 +111,31 @@ const TYPE_FOLDER_MAP: Record<string, string> = {
 
 const NO_STATUS_TYPES = new Set(['Topic', 'Person'])
 
+const ENTRY_DELETE_MAP: Record<string, Partial<VaultEntry>> = {
+  is_a: { isA: null }, status: { status: null }, color: { color: null },
+  icon: { icon: null }, owner: { owner: null }, cadence: { cadence: null },
+  aliases: { aliases: [] }, belongs_to: { belongsTo: [] }, related_to: { relatedTo: [] },
+  archived: { archived: false }, trashed: { trashed: false }, order: { order: null },
+}
+
+/** Map a frontmatter key+value to the corresponding VaultEntry field(s). */
+export function frontmatterToEntryPatch(
+  op: 'update' | 'delete', key: string, value?: FrontmatterValue,
+): Partial<VaultEntry> {
+  const k = key.toLowerCase().replace(/\s+/g, '_')
+  if (op === 'delete') return ENTRY_DELETE_MAP[k] ?? {}
+  const str = value != null ? String(value) : null
+  const arr = Array.isArray(value) ? value.map(String) : []
+  const updates: Record<string, Partial<VaultEntry>> = {
+    is_a: { isA: str }, status: { status: str }, color: { color: str },
+    icon: { icon: str }, owner: { owner: str }, cadence: { cadence: str },
+    aliases: { aliases: arr }, belongs_to: { belongsTo: arr }, related_to: { relatedTo: arr },
+    archived: { archived: Boolean(value) }, trashed: { trashed: Boolean(value) },
+    order: { order: typeof value === 'number' ? value : null },
+  }
+  return updates[k] ?? {}
+}
+
 function addEntryWithMock(entry: VaultEntry, content: string, addEntry: (e: VaultEntry, c: string) => void) {
   if (!isTauri()) addMockEntry(entry, content)
   addEntry(entry, content)
@@ -129,6 +162,12 @@ export function resolveNewType(typeName: string): { entry: VaultEntry; content: 
   return { entry, content: `---\nIs A: Type\n---\n\n# ${typeName}\n\n` }
 }
 
+function findWikilinkTarget(entries: VaultEntry[], target: string): VaultEntry | undefined {
+  const targetLower = target.toLowerCase()
+  const targetAsWords = target.split('/').pop()?.replace(/-/g, ' ').toLowerCase() ?? targetLower
+  return entries.find((e) => entryMatchesTarget(e, targetLower, targetAsWords))
+}
+
 async function executeFrontmatterOp(op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue): Promise<string> {
   if (op === 'update') {
     return isTauri() ? invokeFrontmatter('update_frontmatter', { path, key, value }) : applyMockFrontmatterUpdate(path, key, value!)
@@ -136,14 +175,29 @@ async function executeFrontmatterOp(op: 'update' | 'delete', path: string, key: 
   return isTauri() ? invokeFrontmatter('delete_frontmatter_property', { path, key }) : applyMockFrontmatterDelete(path, key)
 }
 
-export function useNoteActions(
-  addEntry: (entry: VaultEntry, content: string) => void,
-  updateContent: (path: string, content: string) => void,
-  entries: VaultEntry[],
-  setToastMessage: (msg: string | null) => void,
-) {
+function renameToastMessage(updatedFiles: number): string {
+  if (updatedFiles === 0) return 'Renamed'
+  return `Renamed — updated ${updatedFiles} wiki link${updatedFiles > 1 ? 's' : ''}`
+}
+
+/** Reload content for open tabs whose wikilinks may have changed after a rename. */
+async function reloadTabsAfterRename(
+  tabPaths: string[],
+  updateTabContent: (path: string, content: string) => void,
+): Promise<void> {
+  for (const tabPath of tabPaths) {
+    try {
+      updateTabContent(tabPath, await loadNoteContent(tabPath))
+    } catch { /* skip tabs that fail to reload */ }
+  }
+}
+
+export function useNoteActions(config: NoteActionsConfig) {
+  const { addEntry, updateContent, entries, setToastMessage, updateEntry } = config
   const tabMgmt = useTabManagement()
   const { setTabs, handleSelectNote, activeTabPathRef, handleSwitchTab } = tabMgmt
+  const tabsRef = useRef(tabMgmt.tabs)
+  tabsRef.current = tabMgmt.tabs
 
   const updateTabContent = useCallback((path: string, newContent: string) => {
     setTabs((prev) => prev.map((t) => t.entry.path === path ? { ...t, content: newContent } : t))
@@ -151,9 +205,7 @@ export function useNoteActions(
   }, [setTabs, updateContent])
 
   const handleNavigateWikilink = useCallback((target: string) => {
-    const targetLower = target.toLowerCase()
-    const targetAsWords = target.split('/').pop()?.replace(/-/g, ' ').toLowerCase() ?? targetLower
-    const found = entries.find((e) => entryMatchesTarget(e, targetLower, targetAsWords))
+    const found = findWikilinkTarget(entries, target)
     if (found) handleSelectNote(found)
     else console.warn(`Navigation target not found: ${target}`)
   }, [entries, handleSelectNote])
@@ -173,12 +225,14 @@ export function useNoteActions(
   const runFrontmatterOp = useCallback(async (op: 'update' | 'delete', path: string, key: string, value?: FrontmatterValue) => {
     try {
       updateTabContent(path, await executeFrontmatterOp(op, path, key, value))
+      const patch = frontmatterToEntryPatch(op, key, value)
+      if (Object.keys(patch).length > 0) updateEntry(path, patch)
       setToastMessage(op === 'update' ? 'Property updated' : 'Property deleted')
     } catch (err) {
       console.error(`Failed to ${op} frontmatter:`, err)
       setToastMessage(`Failed to ${op} property`)
     }
-  }, [updateTabContent, setToastMessage])
+  }, [updateTabContent, updateEntry, setToastMessage])
 
   const handleRenameNote = useCallback(async (
     path: string,
@@ -192,17 +246,21 @@ export function useNoteActions(
       const entry = entries.find((e) => e.path === path)
       const newEntry = buildRenamedEntry(entry ?? {} as VaultEntry, newTitle, result.new_path)
 
+      const otherTabPaths = tabsRef.current
+        .filter(t => t.entry.path !== path)
+        .map(t => t.entry.path)
+
       setTabs((prev) => prev.map((t) => t.entry.path === path ? { entry: newEntry, content: newContent } : t))
       if (activeTabPathRef.current === path) handleSwitchTab(result.new_path)
       onEntryRenamed(path, newEntry, newContent)
 
-      const n = result.updated_files
-      setToastMessage(n > 0 ? `Renamed — updated ${n} wiki link${n > 1 ? 's' : ''}` : 'Renamed')
+      await reloadTabsAfterRename(otherTabPaths, updateTabContent)
+      setToastMessage(renameToastMessage(result.updated_files))
     } catch (err) {
       console.error('Failed to rename note:', err)
       setToastMessage('Failed to rename note')
     }
-  }, [entries, setTabs, activeTabPathRef, handleSwitchTab, setToastMessage])
+  }, [entries, setTabs, activeTabPathRef, handleSwitchTab, updateTabContent, setToastMessage])
 
   return {
     ...tabMgmt,

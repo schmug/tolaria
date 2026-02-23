@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { preProcessWikilinks, injectWikilinks, splitFrontmatter, countWords } from './wikilinks'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test helper for asserting on opaque block structures
+type AnyBlock = any
+
 describe('preProcessWikilinks', () => {
   it('replaces [[target]] with placeholder tokens', () => {
     const result = preProcessWikilinks('See [[My Note]] for details')
@@ -40,7 +43,7 @@ describe('injectWikilinks', () => {
       ],
     }]
 
-    const result = injectWikilinks(blocks)
+    const result = injectWikilinks(blocks) as AnyBlock[] as AnyBlock[]
     expect(result[0].content).toHaveLength(3)
     expect(result[0].content[0]).toEqual({ type: 'text', text: 'before ' })
     expect(result[0].content[1]).toEqual({
@@ -58,8 +61,8 @@ describe('injectWikilinks', () => {
       ],
     }]
 
-    const result = injectWikilinks(blocks)
-    const wikilinkNodes = result[0].content.filter((n: any) => n.type === 'wikilink')
+    const result = injectWikilinks(blocks) as AnyBlock[]
+    const wikilinkNodes = result[0].content.filter((n: AnyBlock) => n.type === 'wikilink')
     expect(wikilinkNodes).toHaveLength(2)
     expect(wikilinkNodes[0].props.target).toBe('A')
     expect(wikilinkNodes[1].props.target).toBe('B')
@@ -72,7 +75,7 @@ describe('injectWikilinks', () => {
       ],
     }]
 
-    const result = injectWikilinks(blocks)
+    const result = injectWikilinks(blocks) as AnyBlock[]
     expect(result[0].content[0].type).toBe('link')
   })
 
@@ -86,7 +89,7 @@ describe('injectWikilinks', () => {
       }],
     }]
 
-    const result = injectWikilinks(blocks)
+    const result = injectWikilinks(blocks) as AnyBlock[]
     const childContent = result[0].children[0].content
     expect(childContent).toHaveLength(2)
     expect(childContent[1].type).toBe('wikilink')
@@ -95,7 +98,7 @@ describe('injectWikilinks', () => {
 
   it('handles blocks without content or children', () => {
     const blocks = [{ type: 'heading', props: { level: 1 } }]
-    const result = injectWikilinks(blocks)
+    const result = injectWikilinks(blocks) as AnyBlock[]
     expect(result).toEqual(blocks)
   })
 
@@ -106,7 +109,7 @@ describe('injectWikilinks', () => {
       ],
     }]
 
-    const result = injectWikilinks(blocks)
+    const result = injectWikilinks(blocks) as AnyBlock[]
     expect(result[0].content[0].type).toBe('wikilink')
     expect(result[0].content[0].props.target).toBe('First')
     expect(result[0].content[1].text).toBe(' text')
@@ -119,7 +122,7 @@ describe('injectWikilinks', () => {
       ],
     }]
 
-    const result = injectWikilinks(blocks)
+    const result = injectWikilinks(blocks) as AnyBlock[]
     expect(result[0].content[0].text).toBe('text ')
     expect(result[0].content[1].type).toBe('wikilink')
   })
