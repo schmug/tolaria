@@ -21,12 +21,12 @@ const VIEW_MODE_KEYS: Record<string, ViewMode> = {
   '3': 'all',
 }
 
-function isAltOnly(e: KeyboardEvent): boolean {
-  return e.altKey && !e.metaKey && !e.ctrlKey
+function isCmdOnly(e: KeyboardEvent): boolean {
+  return (e.metaKey || e.ctrlKey) && !e.altKey
 }
 
 function handleViewModeKey(e: KeyboardEvent, onSetViewMode: (m: ViewMode) => void): boolean {
-  if (!isAltOnly(e)) return false
+  if (!isCmdOnly(e)) return false
   const mode = VIEW_MODE_KEYS[e.key]
   if (!mode) return false
   e.preventDefault()

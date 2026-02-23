@@ -31,31 +31,31 @@ function makeActions() {
 describe('useAppKeyboard', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('Option+1 sets view mode to editor-only', () => {
+  it('Cmd+1 sets view mode to editor-only', () => {
     const actions = makeActions()
     renderHook(() => useAppKeyboard(actions))
-    fireKey('1', { altKey: true })
+    fireKey('1', { metaKey: true })
     expect(actions.onSetViewMode).toHaveBeenCalledWith('editor-only')
   })
 
-  it('Option+2 sets view mode to editor-list', () => {
+  it('Cmd+2 sets view mode to editor-list', () => {
     const actions = makeActions()
     renderHook(() => useAppKeyboard(actions))
-    fireKey('2', { altKey: true })
+    fireKey('2', { metaKey: true })
     expect(actions.onSetViewMode).toHaveBeenCalledWith('editor-list')
   })
 
-  it('Option+3 sets view mode to all', () => {
+  it('Cmd+3 sets view mode to all', () => {
     const actions = makeActions()
     renderHook(() => useAppKeyboard(actions))
-    fireKey('3', { altKey: true })
+    fireKey('3', { metaKey: true })
     expect(actions.onSetViewMode).toHaveBeenCalledWith('all')
   })
 
-  it('does not fire view mode when Cmd+Alt pressed (not Alt-only)', () => {
+  it('does not fire view mode when Cmd+Alt pressed', () => {
     const actions = makeActions()
     renderHook(() => useAppKeyboard(actions))
-    fireKey('1', { altKey: true, metaKey: true })
+    fireKey('1', { metaKey: true, altKey: true })
     expect(actions.onSetViewMode).not.toHaveBeenCalled()
   })
 
