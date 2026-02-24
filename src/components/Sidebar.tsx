@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react'
 import type { VaultEntry, SidebarSelection } from '../types'
-import { resolveIcon, TypeCustomizePopover } from './TypeCustomizePopover'
+import { resolveIcon } from '../utils/iconRegistry'
+import { TypeCustomizePopover } from './TypeCustomizePopover'
 import { useSectionVisibility } from '../hooks/useSectionVisibility'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,

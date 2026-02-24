@@ -6,7 +6,7 @@ import {
   Users, CalendarBlank, Tag, FileText, StackSimple,
 } from '@phosphor-icons/react'
 import { getTypeColor, getTypeLightColor } from '../utils/typeColors'
-import { resolveIcon } from './TypeCustomizePopover'
+import { resolveIcon } from '../utils/iconRegistry'
 import { relativeDate, getDisplayDate } from '../utils/noteListHelpers'
 
 const TYPE_ICON_MAP: Record<string, ComponentType<SVGAttributes<SVGSVGElement>>> = {
