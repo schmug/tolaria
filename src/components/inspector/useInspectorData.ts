@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { VaultEntry } from '../../types'
-import { wikilinkTarget } from '../../utils/wikilink'
+import { resolveEntry, wikilinkTarget } from '../../utils/wikilink'
+import { extractBacklinkContexts } from '../../utils/wikilinks'
 import type { ReferencedByItem, BacklinkItem } from '../InspectorPanels'
 
 interface InspectorLinkIndex {
@@ -173,4 +174,59 @@ export function useBacklinks(entry: VaultEntry | null, entries: VaultEntry[], re
     const referencedByPaths = new Set(referencedBy.map((item) => item.entry.path))
     return backlinks.filter((item) => !referencedByPaths.has(item.entry.path))
   }, [entry, linkIndex, referencedBy])
+}
+
+function collectMatchingTargets(
+  source: VaultEntry,
+  activePath: string,
+  entries: VaultEntry[],
+): Set<string> {
+  const matches = new Set<string>()
+  for (const target of source.outgoingLinks) {
+    if (resolveEntry(entries, target)?.path === activePath) {
+      matches.add(target)
+    }
+  }
+  return matches
+}
+
+function expandSingleBacklink(
+  item: BacklinkItem,
+  activeEntry: VaultEntry,
+  entries: VaultEntry[],
+  sourceContents: Map<string, string>,
+): BacklinkItem[] {
+  const content = sourceContents.get(item.entry.path)
+  if (!content) return [item]
+
+  const matchTargets = collectMatchingTargets(item.entry, activeEntry.path, entries)
+  if (matchTargets.size === 0) return [item]
+
+  const contexts = extractBacklinkContexts(content, matchTargets)
+  if (contexts.length === 0) return [item]
+
+  return contexts.map((ctx) => ({ entry: item.entry, context: ctx.context }))
+}
+
+/** Expand sync backlinks (one-per-source) into per-occurrence items with context snippets.
+ * Sources whose content hasn't loaded (absent from `sourceContents`) pass through unchanged.
+ * Sources whose body has no matching wikilink also pass through unchanged (covers stale
+ * index / frontmatter-only matches). */
+export function expandBacklinksWithContext(
+  backlinks: BacklinkItem[],
+  activeEntry: VaultEntry,
+  entries: VaultEntry[],
+  sourceContents: Map<string, string>,
+): BacklinkItem[] {
+  const result: BacklinkItem[] = []
+  for (const item of backlinks) {
+    result.push(...expandSingleBacklink(item, activeEntry, entries, sourceContents))
+  }
+  return result
+}
+
+/** Return outgoing wikilink targets in the entry's body that do not resolve to any vault entry.
+ * Preserves the order given by `entry.outgoingLinks` (which is sorted+deduped at scan time). */
+export function findUnresolvedOutgoingLinks(entry: VaultEntry, entries: VaultEntry[]): string[] {
+  return entry.outgoingLinks.filter((target) => !resolveEntry(entries, target))
 }

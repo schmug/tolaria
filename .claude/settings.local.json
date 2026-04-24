@@ -5,7 +5,9 @@
       "Read(*)",
       "Bash(cat*)",
       "Bash(ls*)",
-      "Write(*)"
+      "Write(*)",
+      "Bash(cs --version)",
+      "Bash(pnpm vitest *)"
     ]
   }
 }

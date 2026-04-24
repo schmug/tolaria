@@ -120,38 +120,76 @@ export function extractOutgoingLinks(content: string): string[] {
   return [...new Set(links)].sort()
 }
 
-/** Extract the paragraph surrounding a [[target]] wikilink match from note content.
- * Searches for any target in the set, returns the first matching paragraph trimmed
- * to a max length. Returns null if no match found. */
+export interface BacklinkContext {
+  /** Raw wikilink target string as it appears in the source body (before any pipe). */
+  target: string
+  /** Paragraph text containing the match, whitespace-collapsed and length-capped. */
+  context: string
+}
+
+function stripBodyForBacklinkSearch(content: string): string {
+  const [, body] = splitFrontmatter(content)
+  return body.replace(/^\s*# [^\n]+\n?/, '')
+}
+
+function truncateContext(flat: string, maxLength: number): string {
+  return flat.length <= maxLength ? flat : flat.slice(0, maxLength - 1) + '\u2026'
+}
+
+function targetMatches(target: string, matchTargets: Set<string>): boolean {
+  if (matchTargets.has(target)) return true
+  const lastSegment = target.split('/').pop() ?? ''
+  return matchTargets.has(lastSegment)
+}
+
+function wikilinkTargetFromInner(inner: string): string {
+  const pipeIdx = inner.indexOf('|')
+  return pipeIdx !== -1 ? inner.slice(0, pipeIdx) : inner
+}
+
+function collectParagraphMatches(
+  paragraph: string,
+  matchTargets: Set<string>,
+  maxLength: number,
+  sink: BacklinkContext[],
+): void {
+  const trimmed = paragraph.trim()
+  if (!trimmed) return
+  const flat = trimmed.replace(/\s+/g, ' ')
+  const context = truncateContext(flat, maxLength)
+  for (const match of trimmed.matchAll(/\[\[([^\]]+)\]\]/g)) {
+    const target = wikilinkTargetFromInner(match[1])
+    if (targetMatches(target, matchTargets)) {
+      sink.push({ target, context })
+    }
+  }
+}
+
+/** Extract all paragraph-level backlink occurrences from note content.
+ * Emits one entry per matching `[[target]]` (or `[[target|display]]`) occurrence in
+ * reading order. A paragraph containing the same target twice yields two entries with
+ * the same context. `matchTargets` matches either the full target or its last path
+ * segment (for path-style wikilinks like `[[project/Alice]]`). */
+export function extractBacklinkContexts(
+  content: string,
+  matchTargets: Set<string>,
+  maxLength = 120,
+): BacklinkContext[] {
+  const results: BacklinkContext[] = []
+  for (const paragraph of stripBodyForBacklinkSearch(content).split(/\n{2,}/)) {
+    collectParagraphMatches(paragraph, matchTargets, maxLength, results)
+  }
+  return results
+}
+
+/** Extract the paragraph surrounding the first [[target]] wikilink match from note content.
+ * Returns null if no match found. Thin wrapper over `extractBacklinkContexts`. */
 export function extractBacklinkContext(
   content: string,
   matchTargets: Set<string>,
   maxLength = 120,
 ): string | null {
-  const [, body] = splitFrontmatter(content)
-  // Remove the H1 title line
-  const withoutTitle = body.replace(/^\s*# [^\n]+\n?/, '')
-  const paragraphs = withoutTitle.split(/\n{2,}/)
-
-  for (const para of paragraphs) {
-    const trimmed = para.trim()
-    if (!trimmed) continue
-    // Check if this paragraph contains a wikilink matching any target
-    const re = /\[\[([^\]]+)\]\]/g
-    let match
-    while ((match = re.exec(trimmed)) !== null) {
-      const inner = match[1]
-      const pipeIdx = inner.indexOf('|')
-      const target = pipeIdx !== -1 ? inner.slice(0, pipeIdx) : inner
-      if (matchTargets.has(target) || matchTargets.has(target.split('/').pop() ?? '')) {
-        // Collapse whitespace and truncate
-        const flat = trimmed.replace(/\s+/g, ' ')
-        if (flat.length <= maxLength) return flat
-        return flat.slice(0, maxLength - 1) + '\u2026'
-      }
-    }
-  }
-  return null
+  return extractBacklinkContexts(content, matchTargets, maxLength)[0]?.context ?? null
 }
 
 /** Check if a line is useful for snippet extraction (not blank, heading, code fence, or rule). */
