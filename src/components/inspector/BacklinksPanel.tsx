@@ -51,9 +51,9 @@ export function BacklinksPanel({ backlinks, onNavigate }: {
         Backlinks
       </h4>
       <div className="flex flex-col gap-1.5" data-testid="backlinks-list">
-        {backlinks.map(({ entry, context }) => (
+        {backlinks.map(({ entry, context }, index) => (
           <BacklinkEntry
-            key={entry.path}
+            key={`${entry.path}:${index}`}
             entry={entry}
             context={context}
             onNavigate={onNavigate}

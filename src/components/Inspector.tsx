@@ -14,7 +14,9 @@ import {
 } from './InspectorPanels'
 import type { ReferencedByItem } from './InspectorPanels'
 import { EmptyInspector, InitializePropertiesPrompt, InspectorHeader, InvalidFrontmatterNotice } from './inspector/InspectorChrome'
-import { useBacklinks, useReferencedBy } from './inspector/useInspectorData'
+import { useBacklinks, useReferencedBy, expandBacklinksWithContext, findUnresolvedOutgoingLinks } from './inspector/useInspectorData'
+import { useBacklinkSourceContents } from './inspector/useBacklinkSourceContents'
+import { UnresolvedLinksPanel } from './inspector/UnresolvedLinksPanel'
 import { useInspectorPropertyActions } from './inspector/useInspectorPropertyActions'
 
 export type FrontmatterValue = string | number | boolean | string[] | null
@@ -179,7 +181,17 @@ function InspectorBody({
   onToggleRawEditor,
 }: Omit<InspectorProps, 'collapsed' | 'onToggle'>) {
   const referencedBy = useReferencedBy(entry, entries)
-  const backlinks = useBacklinks(entry, entries, referencedBy)
+  const syncBacklinks = useBacklinks(entry, entries, referencedBy)
+  const backlinkSourcePaths = useMemo(() => syncBacklinks.map((item) => item.entry.path), [syncBacklinks])
+  const backlinkSourceContents = useBacklinkSourceContents(backlinkSourcePaths)
+  const backlinks = useMemo(
+    () => (entry ? expandBacklinksWithContext(syncBacklinks, entry, entries, backlinkSourceContents) : syncBacklinks),
+    [entry, entries, syncBacklinks, backlinkSourceContents],
+  )
+  const unresolvedLinks = useMemo(
+    () => (entry ? findUnresolvedOutgoingLinks(entry, entries) : []),
+    [entry, entries],
+  )
   const frontmatter = useMemo(() => parseFrontmatter(content), [content])
   const frontmatterState = useMemo(() => detectFrontmatterState(content), [content])
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
@@ -221,6 +233,8 @@ function InspectorBody({
       />
       {backlinks.length > 0 && <Separator />}
       <BacklinksPanel backlinks={backlinks} onNavigate={onNavigate} />
+      {unresolvedLinks.length > 0 && <Separator />}
+      <UnresolvedLinksPanel unresolvedTargets={unresolvedLinks} />
       <Separator />
       <NoteInfoPanel entry={entry} content={content} />
       {gitHistory.length > 0 && <Separator />}
