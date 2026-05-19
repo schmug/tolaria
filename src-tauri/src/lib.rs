@@ -360,6 +360,21 @@ fn setup_macos_webview_shortcut_prevention(
 fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     setup_common_plugins(app)?;
 
+    // On mobile there is no `~/.config` (`dirs::config_dir()` is `None` on
+    // Android/iOS), so settings reads/writes fail and the app gets stuck on the
+    // first settings-backed screen. Seed the settings module with the
+    // Tauri-resolved app-scoped config directory before anything reads settings
+    // (telemetry init below already does).
+    #[cfg(mobile)]
+    {
+        use tauri::Manager;
+        let dir = app
+            .path()
+            .app_config_dir()
+            .map_err(|e| format!("Failed to resolve mobile app config dir: {e}"))?;
+        crate::settings::set_mobile_app_config_dir(dir);
+    }
+
     #[cfg(desktop)]
     setup_desktop_plugins(app)?;
 

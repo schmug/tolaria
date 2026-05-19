@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+#[cfg(mobile)]
+use std::sync::OnceLock;
 
 use crate::ai_models::{normalize_ai_model_providers, AiModelProvider};
 
@@ -211,8 +213,32 @@ fn normalize_settings(settings: Settings) -> Settings {
     }
 }
 
-fn app_config_dir() -> Result<PathBuf, String> {
-    dirs::config_dir().ok_or_else(|| "Could not determine config directory".to_string())
+/// App-scoped config directory for mobile, seeded once at startup from the
+/// Tauri path resolver (see `setup_app`). `dirs::config_dir()` is `None` on
+/// Android/iOS, so mobile must use this instead. Mobile-only: desktop resolves
+/// via `dirs::config_dir()` and never references this.
+#[cfg(mobile)]
+static MOBILE_APP_CONFIG_DIR: OnceLock<PathBuf> = OnceLock::new();
+
+/// Seed the mobile app-scoped config directory. Idempotent (first write wins);
+/// called from `setup_app` before any settings access on mobile.
+#[cfg(mobile)]
+pub(crate) fn set_mobile_app_config_dir(dir: PathBuf) {
+    let _ = MOBILE_APP_CONFIG_DIR.set(dir);
+}
+
+pub(crate) fn app_config_dir() -> Result<PathBuf, String> {
+    #[cfg(mobile)]
+    {
+        MOBILE_APP_CONFIG_DIR
+            .get()
+            .cloned()
+            .ok_or_else(|| "Mobile app config directory not initialized".to_string())
+    }
+    #[cfg(not(mobile))]
+    {
+        dirs::config_dir().ok_or_else(|| "Could not determine config directory".to_string())
+    }
 }
 
 pub(crate) fn preferred_app_config_path(file_name: &str) -> Result<PathBuf, String> {

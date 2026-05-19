@@ -193,6 +193,11 @@ const devServerWatchIgnored = [
   '**/playwright-report/**',
   '**/dist/**',
   '**/src-tauri/target/**',
+  // `tauri android|ios dev` continuously writes Gradle/Xcode build output,
+  // symlinked .so/jniLibs, and problem reports under src-tauri/gen/**. Without
+  // this, every native build write triggers a full WebView page reload, so the
+  // app re-mounts constantly and never stays interactive on device/emulator.
+  '**/src-tauri/gen/**',
 ]
 
 function readUtf8File(filePath: string): string {

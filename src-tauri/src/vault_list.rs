@@ -34,9 +34,10 @@ pub struct VaultList {
     pub hidden_defaults: Vec<String>,
 }
 
-fn app_config_dir() -> Result<PathBuf, String> {
-    dirs::config_dir().ok_or_else(|| "Could not determine config directory".to_string())
-}
+// Single source of truth: `settings::app_config_dir` handles the mobile
+// app-scoped path vs. desktop `dirs::config_dir()` (see ADR-0123). The vault
+// list lives alongside settings.json under the same base directory.
+use crate::settings::app_config_dir;
 
 fn preferred_app_config_path(file_name: &str) -> Result<PathBuf, String> {
     Ok(app_config_dir()?.join(APP_CONFIG_DIR).join(file_name))
