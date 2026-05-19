@@ -171,3 +171,77 @@ Sources:
 - [Tauri 2.0 Stable Release](https://v2.tauri.app/blog/tauri-20/)
 - [Mobile Plugin Development | Tauri](https://v2.tauri.app/develop/plugins/develop-mobile/)
 - [Develop | Tauri](https://v2.tauri.app/develop/)
+
+---
+
+## Android viability spike — outcome (2026-05-18)
+
+> Resolves the **"Android maturity gate"** open question and Issue #3. Scope:
+> stand up a Tauri 2 Android build and run it **locally on the macOS Android
+> emulator** (not a physical device — the goal explicitly asked for emulator
+> testing on this Mac). This is the Android half of the Phase 0 gate; on-device
+> physical testing and the Phase 0 vault feature loop remain follow-ups.
+
+### Recommendation: **GO** ✅
+
+A Tauri 2 Android debug build compiles, installs, and runs on the emulator.
+The React frontend renders, the WebView is interactive (touch input
+registers), and the Rust↔JS IPC works (the Sentry-consent dialog is driven by
+a Rust `get_settings` round-trip). No native crash; process stays alive. The
+Android plugin-coverage risk the strategy flagged did **not** materialize for
+Tolaria — the desktop-only plugins are already registration-gated off mobile,
+and the only real blockers were cross-compilation issues, all fixed with
+small, desktop-neutral changes.
+
+### Reproduce locally (macOS, Apple Silicon)
+
+- Toolchain: `tauri-cli 2.10.0` (via `pnpm tauri`), Rust 1.93, NDK
+  `28.2.13676358`, JDK 21 (Temurin), Android SDK at `~/Library/Android/sdk`.
+- `rustup target add aarch64-linux-android` (emulator on Apple Silicon is
+  native arm64; the other Android targets were added by `tauri android init`).
+- Env: `ANDROID_HOME`, `NDK_HOME`, `JAVA_HOME` (`/usr/libexec/java_home -v
+  21`), and `platform-tools`/`emulator` on `PATH`.
+- `pnpm tauri android init` → generates `src-tauri/gen/android/` (committed,
+  same convention as `gen/apple/`; `build/` is git-ignored by the generated
+  `.gitignore`).
+- `pnpm tauri android build --debug --target aarch64` → produces
+  `gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk`.
+- AVD: `system-images;android-35;google_apis_playstore;arm64-v8a`; install with
+  `adb install -r`, launch `club.refactoring.tolaria/.MainActivity`.
+- Generated Android levels: `minSdk 24`, `compileSdk`/`targetSdk 36`.
+
+### Cross-compilation blockers found and fixed
+
+| Blocker | Root cause | Fix (desktop-neutral) |
+|---|---|---|
+| `openssl-sys` fails to cross-compile for `aarch64-linux-android` | `sentry`'s default `transport` feature pulls `reqwest` with `native-tls`; Cargo feature-unifies that onto our otherwise-rustls `reqwest` | Declared `sentry` per-target in `Cargo.toml`: desktop keeps the default (native-tls); mobile uses `default-features=false` + `rustls`. Verified `openssl-sys` is gone from the Android tree and desktop sentry is unchanged. |
+| `AiAgentsStatus` / `AiAgentStreamRequest` not in scope (mobile) | `use crate::ai_agents::{...}` was `#[cfg(desktop)]` but the `#[cfg(mobile)]` command stubs reference those types | Made that single `use` unconditional (types are defined unconditionally; used by both paths) |
+| `get_ai_agents_status` mobile stub missing `kiro` field | `kiro` agent (PR #572) added to `AiAgentsStatus` after the mobile stub was written | Added the `kiro: AiAgentAvailability` initializer to the mobile stub |
+| `sync_vault_asset_scope` not found (mobile) in `reload_vault` | `crate::sync_vault_asset_scope` is `#[cfg(desktop)]`; `scan_cmds.rs` called it unguarded (other call sites in `file_cmds.rs` already guarded) | Applied the existing `#[cfg(desktop)]` / `#[cfg(not(desktop))]` guard pattern at the call site |
+| Desktop-only window methods (`show`/`center`/`set_focus`/`unminimize`) compiled on mobile | `show_debug_main_window` was gated only on `debug_assertions`, not `desktop` | Re-gated to `#[cfg(all(desktop, debug_assertions))]` with a `not(...)` no-op (only ever called from the already-`#[cfg(desktop)]` setup path) |
+
+### Plugin / feature viability matrix (Android, emulator)
+
+| Capability | Status | Notes |
+|---|---|---|
+| `tauri-plugin-log` | **works** | Registered for all targets; `RustStdoutStderr` visible in `logcat` |
+| `tauri-plugin-dialog` | **compiles + registered** | Registered on mobile via `setup_common_plugins`; Tauri documents Android support. The folder-picker → SAF flow itself is **not yet exercised** (Phase 0, Issue #2) |
+| Rust ↔ JS IPC / `invoke` | **works** | Settings round-trip drives the consent dialog; WebView renders the React app |
+| Touch input | **works** | Taps register and change focus state in the WebView |
+| `protocol-asset` | **degraded/untested** | Asset-scope sync is correctly no-op'd on mobile (`#[cfg(not(desktop))]`); actual `asset:`-served images in a vault not yet validated |
+| `tauri-plugin-updater` | **absent by design** | Registration `#[cfg(desktop)]`; `#[cfg(mobile)]` command stubs return "not available on mobile" (matches strategy: no in-app updates on mobile) |
+| `tauri-plugin-process` | **absent by design** | Desktop-only registration; not needed on mobile |
+| `tauri-plugin-opener` | **absent on mobile** | Registered only in `setup_desktop_plugins`; not core for Phase 0 |
+| `tauri-plugin-prevent-default` | **absent by design** | macOS-desktop-only (`#[cfg(all(desktop, target_os = "macos"))]`) |
+| CLI AI agents | **absent by design** | All `#[cfg(desktop)]`; mobile stubs return "not available" — matches the AI-on-mobile decision still open in Issue #5 |
+| `notify` vault watcher | **stubbed (expected)** | Mobile relies on manual refresh, per the strategy doc |
+
+### Not covered by this spike (remains open)
+
+- **Physical-device** Android run (Issue #2/#3 acceptance for hardware parity).
+- Phase 0 feature loop on Android: SAF folder pick → persist across restart →
+  browse → search → edit → save (Issue #2, Android half).
+- Per-OS vault-access ADR (Issue #5) — to be drafted with the Phase 0
+  vault-access code, not here (no path change ⇒ no ADR for this spike).
+- `asset:` image rendering and `tauri-plugin-dialog` SAF picker exercised
+  end-to-end on Android.

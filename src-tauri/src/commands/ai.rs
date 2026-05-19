@@ -1,4 +1,4 @@
-#[cfg(desktop)]
+// Used by both the desktop implementations and the `#[cfg(mobile)]` stubs below.
 use crate::ai_agents::{AiAgentStreamRequest, AiAgentsStatus};
 #[cfg(desktop)]
 use crate::ai_models::{AiModelProviderTestRequest, AiModelStreamRequest};
@@ -200,6 +200,10 @@ pub fn get_ai_agents_status() -> AiAgentsStatus {
             version: None,
         },
         gemini: crate::ai_agents::AiAgentAvailability {
+            installed: false,
+            version: None,
+        },
+        kiro: crate::ai_agents::AiAgentAvailability {
             installed: false,
             version: None,
         },

@@ -81,7 +81,10 @@ pub async fn reload_vault(
     path: String,
 ) -> Result<Vec<crate::vault::VaultEntry>, String> {
     let path = expand_tilde(&path).into_owned();
+    #[cfg(desktop)]
     crate::sync_vault_asset_scope(&app_handle, Path::new(&path))?;
+    #[cfg(not(desktop))]
+    let _ = &app_handle;
     tokio::task::spawn_blocking(move || {
         let vault_path = Path::new(&path);
         vault::invalidate_cache(vault_path);

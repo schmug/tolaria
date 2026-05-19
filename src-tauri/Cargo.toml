@@ -36,9 +36,19 @@ tauri-plugin-updater = "2.10.0"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-opener = "2"
 tauri-plugin-prevent-default = "4.0.4"
-sentry = "0.37"
 uuid = { version = "1", features = ["v4"] }
 tempfile = "3"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+# sentry is declared per-target below (desktop=native-tls, mobile=rustls).
+
+# Sentry transport: desktop keeps the crate default (native-tls); mobile uses
+# rustls so the Android/iOS builds don't have to cross-compile openssl-sys.
+# Both variants live under target blocks (not [dependencies]) so Cargo does not
+# feature-unify native-tls back into the mobile build.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+sentry = "0.37"
+
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+sentry = { version = "0.37", default-features = false, features = ["backtrace", "contexts", "debug-images", "panic", "reqwest", "rustls"] }
 
 [dev-dependencies]
