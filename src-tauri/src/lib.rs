@@ -548,6 +548,16 @@ fn handle_run_event(app_handle: &tauri::AppHandle, event: &tauri::RunEvent) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // `tauri-plugin-updater` is linked (not registered) on mobile; its
+    // `rustls-tls` feature selects reqwest's `rustls-no-provider`, so rustls
+    // 0.23 has no process-default CryptoProvider. The first reqwest client
+    // build then panics, and because that runs inside an `extern` JNI export
+    // the panic cannot unwind → SIGABRT on launch. Install the ring provider
+    // first (first-wins; non-fatal if something already installed one), before
+    // any client is constructed.
+    #[cfg(mobile)]
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     #[cfg(all(desktop, target_os = "linux"))]
     linux_appimage::apply_startup_env_overrides();
 

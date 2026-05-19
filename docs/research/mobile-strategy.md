@@ -220,6 +220,18 @@ small, desktop-neutral changes.
 | `sync_vault_asset_scope` not found (mobile) in `reload_vault` | `crate::sync_vault_asset_scope` is `#[cfg(desktop)]`; `scan_cmds.rs` called it unguarded (other call sites in `file_cmds.rs` already guarded) | Applied the existing `#[cfg(desktop)]` / `#[cfg(not(desktop))]` guard pattern at the call site |
 | Desktop-only window methods (`show`/`center`/`set_focus`/`unminimize`) compiled on mobile | `show_debug_main_window` was gated only on `debug_assertions`, not `desktop` | Re-gated to `#[cfg(all(desktop, debug_assertions))]` with a `not(...)` no-op (only ever called from the already-`#[cfg(desktop)]` setup path) |
 
+### Runtime blocker found and fixed (post-build)
+
+The build succeeding is **not** sufficient — the first `tauri android dev`
+run crashed on launch with `SIGABRT`. The spike's earlier "verification" only
+proved the pre-Sentry-init React shell rendered in a screenshot; it never
+exercised any code path that builds a `reqwest::Client`. Closing that
+verification gap surfaced this:
+
+| Blocker | Root cause | Fix (desktop-neutral) |
+|---|---|---|
+| App aborts (`SIGABRT`) ~7 s after launch on Android. Tombstone: non-unwinding Rust panic at `reqwest-0.13.2/src/async_impl/client.rs:2461`, propagating through `Java_..._RustWebViewClient_handleRequest` (panic cannot unwind across the JNI `extern` boundary → abort). | `tauri-plugin-updater` is linked (not registered) on mobile; its default `rustls-tls` feature selects reqwest's `rustls-no-provider`. rustls 0.23 then has no process-default `CryptoProvider`, so the first reqwest client build panics. Nothing on mobile installs a provider (desktop gets one transitively via the native-tls/other path). | Install the `ring` provider as the first statement of `run()`, gated `#[cfg(mobile)]`: `let _ = rustls::crypto::ring::default_provider().install_default();` (first-wins, non-fatal if already installed). Added `rustls = { version = "0.23", default-features = false, features = ["ring","std"] }` to the mobile target block so the API is reachable; `ring` is already the unified rustls provider feature via reqwest 0.12's `rustls-tls`. Desktop dep graph unchanged. Verified: app stays alive 60 s+ across runs (same PID), through the Sentry-consent → `sentry::init` → reqwest path, with zero `panicked`/`SIGABRT`/`FATAL` in `logcat`. |
+
 ### Plugin / feature viability matrix (Android, emulator)
 
 | Capability | Status | Notes |
@@ -229,7 +241,7 @@ small, desktop-neutral changes.
 | Rust ↔ JS IPC / `invoke` | **works** | Settings round-trip drives the consent dialog; WebView renders the React app |
 | Touch input | **works** | Taps register and change focus state in the WebView |
 | `protocol-asset` | **degraded/untested** | Asset-scope sync is correctly no-op'd on mobile (`#[cfg(not(desktop))]`); actual `asset:`-served images in a vault not yet validated |
-| `tauri-plugin-updater` | **absent by design** | Registration `#[cfg(desktop)]`; `#[cfg(mobile)]` command stubs return "not available on mobile" (matches strategy: no in-app updates on mobile) |
+| `tauri-plugin-updater` | **linked, not registered** | Registration is `#[cfg(desktop)]` and the `#[cfg(mobile)]` command stubs return "not available", but the crate is still **compiled/linked** on mobile. Its default `rustls-tls` feature selects reqwest's `rustls-no-provider`, which **crashed the app on launch** until a process-default rustls `CryptoProvider` was installed — see the runtime-blocker note below. |
 | `tauri-plugin-process` | **absent by design** | Desktop-only registration; not needed on mobile |
 | `tauri-plugin-opener` | **absent on mobile** | Registered only in `setup_desktop_plugins`; not core for Phase 0 |
 | `tauri-plugin-prevent-default` | **absent by design** | macOS-desktop-only (`#[cfg(all(desktop, target_os = "macos"))]`) |

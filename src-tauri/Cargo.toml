@@ -50,5 +50,12 @@ sentry = "0.37"
 
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 sentry = { version = "0.37", default-features = false, features = ["backtrace", "contexts", "debug-images", "panic", "reqwest", "rustls"] }
+# tauri-plugin-updater's `rustls-tls` selects reqwest's `rustls-no-provider`,
+# which requires the app to install a process-default rustls CryptoProvider.
+# On mobile nothing else installs one, so the first reqwest client build panics
+# across the JNI FFI boundary (non-unwinding) → SIGABRT. We install `ring` in
+# run(); declare rustls here so that API is reachable. `ring` is already the
+# provider feature on the unified rustls 0.23 (via reqwest 0.12's rustls-tls).
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
 
 [dev-dependencies]
