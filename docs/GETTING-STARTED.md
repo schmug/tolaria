@@ -75,6 +75,83 @@ pnpm playwright:smoke  # Curated Playwright core smoke lane (~5 min)
 pnpm playwright:regression  # Full Playwright regression suite
 ```
 
+## Pre-push Prerequisites
+
+The `.husky/pre-push` hook runs the full check suite and **blocks the push** if
+any step is missing its tool (never use `--no-verify`). Beyond `pnpm install`
+and a Rust toolchain, the Rust-coverage step needs `cargo-llvm-cov`:
+
+```bash
+brew install cargo-llvm-cov
+rustup component add llvm-tools-preview
+```
+
+Without these, the hook fails at step `[3/5] Rust coverage` with
+`error: no such command: llvm-cov` — after the slower earlier steps have
+already run. The CodeScene step `[5/5]` self-skips when `CODESCENE_PAT` /
+`CODESCENE_PROJECT_ID` are unset; a skipped `[5/5]` is the hook's own
+behavior, not a bypass.
+
+## Android (Local Emulator)
+
+Tauri 2 Android build, runnable on the macOS Android emulator. Toolchain
+verified: `tauri-cli` via `pnpm tauri`, NDK `28.2.13676358`, JDK 21 (Temurin),
+Android SDK at `~/Library/Android/sdk`. One-time: `rustup target add
+aarch64-linux-android` (Apple Silicon emulator is native arm64; the other
+Android targets are added by `tauri android init`).
+
+**1. Env (every new shell):**
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$JAVA_HOME/bin:$PATH"
+```
+
+**2. Create the AVD (one time) and boot it:**
+
+```bash
+avdmanager create avd -n tolaria_arm64 \
+  -k "system-images;android-35;google_apis_playstore;arm64-v8a" -d pixel_7
+emulator -avd tolaria_arm64 -no-snapshot -no-boot-anim -gpu swiftshader_indirect &
+adb wait-for-device
+adb shell getprop sys.boot_completed   # wait until this prints 1
+```
+
+**3a. Live dev loop (rebuilds + reloads on frontend changes):**
+
+```bash
+pnpm tauri android dev
+```
+
+**3b. Or build and run the debug APK directly:**
+
+```bash
+pnpm tauri android build --debug --target aarch64
+adb install -r src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+adb shell am start -n club.refactoring.tolaria/.MainActivity
+adb exec-out screencap -p > /tmp/shot.png && open /tmp/shot.png
+adb logcat -d | grep -iE 'RustStdoutStderr|tauri|FATAL'
+```
+
+Shut down with `adb emu kill`.
+
+**Gotchas**
+
+- Apple Silicon → use the **arm64** AVD; x86_64 images are emulated and slow.
+- `osascript` keystrokes do not reach the WebView (same WKWebView limitation as
+  the native macOS app). Drive input with `adb shell input tap X Y` /
+  `input text`; screenshot coords are device pixels (1080×2400 on this AVD).
+- Cross-compile guard rails: `sentry` is declared per-target in
+  `src-tauri/Cargo.toml` (mobile uses `rustls` to avoid cross-compiling
+  `openssl-sys`); desktop-only plugins/commands stay behind the existing
+  `#[cfg(desktop)]` / `#[cfg(mobile)]` guards.
+- What works today: app launch, WebView render, Rust↔JS IPC, touch input.
+  **Not yet wired:** SAF folder picker / vault open / edit-save on Android —
+  see `docs/research/mobile-strategy.md` ("Android viability spike — outcome")
+  for the full plugin matrix and what remains for Phase 0.
+
 ## Starter Vaults And Remotes
 
 `create_getting_started_vault` clones the public starter repo and then removes every git remote from the new local copy. That means Getting Started vaults open local-only by default. Users connect a compatible remote later through the bottom-bar `No remote` chip or the command palette, both of which feed the same `AddRemoteModal` and `git_add_remote` backend flow.
